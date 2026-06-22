@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.util.Random;
 import java.util.random.RandomGenerator;
 
 import com.dfsek.terra.addons.terrascript.parser.Parser;
@@ -42,12 +43,19 @@ import com.dfsek.terra.addons.terrascript.script.builders.UnaryNumberFunctionBui
 import com.dfsek.terra.addons.terrascript.script.builders.UnaryStringFunctionBuilder;
 import com.dfsek.terra.addons.terrascript.script.builders.ZeroArgFunctionBuilder;
 import com.dfsek.terra.api.Platform;
+import com.dfsek.terra.api.block.entity.BlockEntity;
+import com.dfsek.terra.api.block.state.BlockState;
+import com.dfsek.terra.api.config.ConfigPack;
+import com.dfsek.terra.api.entity.Entity;
+import com.dfsek.terra.api.entity.EntityType;
 import com.dfsek.terra.api.registry.Registry;
 import com.dfsek.terra.api.registry.key.Keyed;
 import com.dfsek.terra.api.registry.key.RegistryKey;
 import com.dfsek.terra.api.structure.LootTable;
 import com.dfsek.terra.api.structure.Structure;
 import com.dfsek.terra.api.world.WritableWorld;
+import com.dfsek.terra.api.world.biome.generation.BiomeProvider;
+import com.dfsek.terra.api.world.chunk.generation.ChunkGenerator;
 
 
 public class StructureScript implements Structure, Keyed<StructureScript> {
@@ -57,6 +65,8 @@ public class StructureScript implements Structure, Keyed<StructureScript> {
 
     private final String profile;
     private final Platform platform;
+    private int maxHorizontalRadius = -1;
+    private boolean calculatingRadius = false;
 
     @SuppressWarnings("rawtypes")
     public StructureScript(InputStream inputStream, RegistryKey id, Platform platform, Registry<Structure> registry,
@@ -158,5 +168,117 @@ public class StructureScript implements Structure, Keyed<StructureScript> {
     @Override
     public RegistryKey getRegistryKey() {
         return id;
+    }
+
+    @Override
+    public int getMaxHorizontalRadius() {
+        if(maxHorizontalRadius >= 0) return maxHorizontalRadius;
+        if(calculatingRadius) return 0;
+        calculatingRadius = true;
+        maxHorizontalRadius = Math.max(block.getMaxHorizontalRadius(), dryRunMaxHorizontalRadius());
+        calculatingRadius = false;
+        return maxHorizontalRadius;
+    }
+
+    private int dryRunMaxHorizontalRadius() {
+        int max = 0;
+        for(RandomGenerator random : new RandomGenerator[] {
+            new ExtremeRandom(false),
+            new ExtremeRandom(true),
+            new Random(0),
+            new Random(1),
+            new Random(31)
+        }) {
+            RecordingWorld recordingWorld = new RecordingWorld(platform.getWorldHandle().createBlockState("minecraft:air"));
+            applyBlock(new TerraImplementationArguments(Vector3Int.of(0, 0, 0), Rotation.NONE, random, recordingWorld, 0));
+            max = Math.max(max, recordingWorld.getMaxHorizontalRadius());
+        }
+        return max;
+    }
+
+    private static final class ExtremeRandom extends Random {
+        private final boolean high;
+
+        private ExtremeRandom(boolean high) {
+            this.high = high;
+        }
+
+        @Override
+        public int nextInt(int bound) {
+            return high ? bound - 1 : 0;
+        }
+    }
+
+    private final class RecordingWorld implements WritableWorld {
+        private final BlockState air;
+        private int maxHorizontalRadius = 0;
+
+        private RecordingWorld(BlockState air) {
+            this.air = air;
+        }
+
+        private int getMaxHorizontalRadius() {
+            return maxHorizontalRadius;
+        }
+
+        private void record(double x, double z) {
+            maxHorizontalRadius = Math.max(maxHorizontalRadius, (int) Math.ceil(Math.max(Math.abs(x), Math.abs(z))));
+        }
+
+        @Override
+        public Object getHandle() {
+            return null;
+        }
+
+        @Override
+        public BlockState getBlockState(int x, int y, int z) {
+            return air;
+        }
+
+        @Override
+        public BlockEntity getBlockEntity(int x, int y, int z) {
+            return null;
+        }
+
+        @Override
+        public long getSeed() {
+            return 0;
+        }
+
+        @Override
+        public int getMaxHeight() {
+            return 384;
+        }
+
+        @Override
+        public int getMinHeight() {
+            return -64;
+        }
+
+        @Override
+        public ChunkGenerator getGenerator() {
+            return null;
+        }
+
+        @Override
+        public BiomeProvider getBiomeProvider() {
+            return null;
+        }
+
+        @Override
+        public ConfigPack getPack() {
+            return null;
+        }
+
+        @Override
+        public void setBlockState(int x, int y, int z, BlockState data, boolean physics) {
+            record(x, z);
+        }
+
+        @Override
+        public Entity spawnEntity(double x, double y, double z, EntityType entityType) {
+            record(x, z);
+            return null;
+        }
     }
 }

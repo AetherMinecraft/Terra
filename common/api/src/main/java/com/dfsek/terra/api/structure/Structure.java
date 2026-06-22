@@ -17,4 +17,13 @@ import com.dfsek.terra.api.world.WritableWorld;
 
 public interface Structure {
     boolean generate(Vector3Int location, WritableWorld world, RandomGenerator random, Rotation rotation);
+
+    /**
+     * Maximum horizontal distance, in blocks, this structure may write from its origin.
+     *
+     * @return Maximum horizontal radius.
+     */
+    default int getMaxHorizontalRadius() {
+        return 0;
+    }
 }

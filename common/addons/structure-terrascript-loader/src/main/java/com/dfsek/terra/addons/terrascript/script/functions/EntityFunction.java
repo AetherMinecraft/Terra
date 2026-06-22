@@ -54,6 +54,7 @@ public class EntityFunction implements Function<Void> {
             .add(arguments.getOrigin().toFloat())
             .add(0.5, 0, 0.5)
             .immutable(), data);
+        if(entity == null) return null;
         platform.getEventManager().callEvent(new EntitySpawnEvent(entity.world().getPack(), entity));
         return null;
     }

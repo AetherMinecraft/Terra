@@ -25,6 +25,7 @@ public class SpongeStructure implements Structure, Keyed<SpongeStructure> {
     private final BlockState[][][] blocks;
 
     private final int offsetX, offsetY, offsetZ;
+    private final int maxHorizontalRadius;
 
     private final RegistryKey id;
 
@@ -33,6 +34,7 @@ public class SpongeStructure implements Structure, Keyed<SpongeStructure> {
         this.offsetX = offset.getX();
         this.offsetY = offset.getY();
         this.offsetZ = offset.getZ();
+        this.maxHorizontalRadius = calculateMaxHorizontalRadius(blocks, offsetX, offsetZ);
         this.id = id;
     }
 
@@ -61,5 +63,21 @@ public class SpongeStructure implements Structure, Keyed<SpongeStructure> {
     @Override
     public RegistryKey getRegistryKey() {
         return id;
+    }
+
+    @Override
+    public int getMaxHorizontalRadius() {
+        return maxHorizontalRadius;
+    }
+
+    private static int calculateMaxHorizontalRadius(BlockState[][][] blocks, int offsetX, int offsetZ) {
+        int max = 0;
+        for(int x = 0; x < blocks.length; x++) {
+            for(int z = 0; z < blocks[x].length; z++) {
+                max = Math.max(max, Math.abs(x + offsetX));
+                max = Math.max(max, Math.abs(z + offsetZ));
+            }
+        }
+        return max;
     }
 }

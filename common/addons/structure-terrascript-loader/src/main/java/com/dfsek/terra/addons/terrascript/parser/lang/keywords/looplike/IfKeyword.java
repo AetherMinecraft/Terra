@@ -12,6 +12,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 import com.dfsek.terra.addons.terrascript.parser.lang.Block;
+import com.dfsek.terra.addons.terrascript.parser.lang.Bounded;
 import com.dfsek.terra.addons.terrascript.parser.lang.ImplementationArguments;
 import com.dfsek.terra.addons.terrascript.parser.lang.Keyword;
 import com.dfsek.terra.addons.terrascript.parser.lang.Returnable;
@@ -20,7 +21,7 @@ import com.dfsek.terra.addons.terrascript.tokenizer.Position;
 import com.dfsek.terra.api.util.generic.pair.Pair;
 
 
-public class IfKeyword implements Keyword<Block.ReturnInfo<?>> {
+public class IfKeyword implements Keyword<Block.ReturnInfo<?>>, Bounded {
     private final Block conditional;
     private final Returnable<Boolean> statement;
     private final Position position;
@@ -58,5 +59,15 @@ public class IfKeyword implements Keyword<Block.ReturnInfo<?>> {
     @Override
     public ReturnType returnType() {
         return ReturnType.VOID;
+    }
+
+    @Override
+    public int getMaxHorizontalRadius() {
+        int max = conditional.getMaxHorizontalRadius();
+        for(Pair<Returnable<Boolean>, Block> pair : elseIf) {
+            max = Math.max(max, pair.getRight().getMaxHorizontalRadius());
+        }
+        if(elseBlock != null) max = Math.max(max, elseBlock.getMaxHorizontalRadius());
+        return max;
     }
 }

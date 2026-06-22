@@ -28,7 +28,9 @@ public class BukkitBlockPopulator extends BlockPopulator {
     @Override
     public void populate(@NotNull WorldInfo worldInfo, @NotNull Random random, int chunkX, int chunkZ,
                          @NotNull LimitedRegion limitedRegion) {
-        pack.getStages().forEach(
-            generationStage -> generationStage.populate(new BukkitProtoWorld(limitedRegion, air, pack.getBiomeProvider())));
+        BukkitProtoWorld protoWorld = new BukkitProtoWorld(limitedRegion, air, pack.getBiomeProvider());
+        protoWorld.flushQueuedOperations();
+        pack.getStages().forEach(generationStage -> generationStage.populate(protoWorld));
+        protoWorld.flushQueuedOperations();
     }
 }

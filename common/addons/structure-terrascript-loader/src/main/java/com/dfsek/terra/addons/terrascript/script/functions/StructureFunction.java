@@ -15,9 +15,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
+import com.dfsek.terra.addons.terrascript.parser.lang.Bounded;
 import com.dfsek.terra.addons.terrascript.parser.lang.ImplementationArguments;
 import com.dfsek.terra.addons.terrascript.parser.lang.Returnable;
 import com.dfsek.terra.addons.terrascript.parser.lang.Scope;
+import com.dfsek.terra.addons.terrascript.parser.lang.constants.ConstantExpression;
 import com.dfsek.terra.addons.terrascript.parser.lang.functions.Function;
 import com.dfsek.terra.addons.terrascript.script.StructureScript;
 import com.dfsek.terra.addons.terrascript.script.TerraImplementationArguments;
@@ -27,7 +29,7 @@ import com.dfsek.terra.api.registry.Registry;
 import com.dfsek.terra.api.structure.Structure;
 
 
-public class StructureFunction implements Function<Boolean> {
+public class StructureFunction implements Function<Boolean>, Bounded {
     private static final Logger LOGGER = LoggerFactory.getLogger(StructureFunction.class);
     private final Registry<Structure> registry;
     private final Returnable<String> id;
@@ -100,5 +102,22 @@ public class StructureFunction implements Function<Boolean> {
     @Override
     public Position getPosition() {
         return position;
+    }
+
+    @Override
+    public int getMaxHorizontalRadius() {
+        if(!(id instanceof ConstantExpression<?> constant) || !(constant.getConstant() instanceof String structureID)) return 0;
+        int offsetX = constantAbs(x);
+        int offsetZ = constantAbs(z);
+        return registry.getByID(structureID)
+            .map(structure -> Math.max(offsetX, offsetZ) + structure.getMaxHorizontalRadius())
+            .orElse(0);
+    }
+
+    private int constantAbs(Returnable<Number> value) {
+        if(value instanceof ConstantExpression<?> constant && constant.getConstant() instanceof Number number) {
+            return Math.abs(FloatingPointFunctions.round(number.doubleValue()));
+        }
+        return 0;
     }
 }

@@ -1,6 +1,7 @@
 package com.dfsek.terra.bukkit.world;
 
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.generator.LimitedRegion;
 import org.slf4j.Logger;
@@ -48,17 +49,12 @@ public class BukkitProtoWorld implements ProtoWorld {
 
     @Override
     public void setBlockState(int x, int y, int z, BlockState data, boolean physics) {
-        access(x, y, z, () -> {
-            BlockData bukkitData = BukkitAdapter.adapt(data);
-            delegate.setBlockData(x, y, z, bukkitData);
-            if(physics) {
-                if(BukkitUtils.isLiquid(bukkitData)) {
-                    delegate.scheduleFluidUpdate(x, y, z);
-                } else {
-                    delegate.scheduleBlockUpdate(x, y, z);
-                }
-            }
-        });
+        if(delegate.isInRegion(x, y, z)) {
+            setBlockStateNow(x, y, z, data, physics);
+        } else {
+            logOutOfBounds(x, y, z);
+            BukkitGenerationQueue.queueBlock(delegate.getWorld(), x, y, z, data, physics);
+        }
     }
 
     @Override
@@ -88,9 +84,12 @@ public class BukkitProtoWorld implements ProtoWorld {
 
     @Override
     public Entity spawnEntity(double x, double y, double z, EntityType entityType) {
-        return access((int) x, (int) y, (int) z, () -> new BukkitEntity(
-            delegate.spawnEntity(new Location(delegate.getWorld(), x, y, z), ((BukkitEntityType) entityType).getHandle()))).orElse(
-            null);
+        if(delegate.isInRegion((int) x, (int) y, (int) z)) {
+            return spawnEntityNow(x, y, z, entityType);
+        }
+        logOutOfBounds((int) x, (int) y, (int) z);
+        BukkitGenerationQueue.queueEntity(delegate.getWorld(), x, y, z, entityType);
+        return null;
     }
 
     @Override
@@ -123,6 +122,35 @@ public class BukkitProtoWorld implements ProtoWorld {
         return new BukkitServerWorld(delegate.getWorld());
     }
 
+    public World getBukkitWorld() {
+        return delegate.getWorld();
+    }
+
+    public void flushQueuedOperations() {
+        BukkitGenerationQueue.flush(this);
+    }
+
+    void setBlockStateNow(int x, int y, int z, BlockState data, boolean physics) {
+        if(!delegate.isInRegion(x, y, z)) return;
+
+        BlockData bukkitData = BukkitAdapter.adapt(data);
+        delegate.setBlockData(x, y, z, bukkitData);
+        if(physics) {
+            if(BukkitUtils.isLiquid(bukkitData)) {
+                delegate.scheduleFluidUpdate(x, y, z);
+            } else {
+                delegate.scheduleBlockUpdate(x, y, z);
+            }
+        }
+    }
+
+    Entity spawnEntityNow(double x, double y, double z, EntityType entityType) {
+        if(!delegate.isInRegion((int) x, (int) y, (int) z)) return null;
+
+        return new BukkitEntity(
+            delegate.spawnEntity(new Location(delegate.getWorld(), x, y, z), ((BukkitEntityType) entityType).getHandle()));
+    }
+
     private <T> Optional<T> access(int x, int y, int z, Supplier<T> action) {
         if(delegate.isInRegion(x, y, z)) {
             return Optional.of(action.get());
@@ -139,7 +167,13 @@ public class BukkitProtoWorld implements ProtoWorld {
     private void access(int x, int y, int z, Runnable action) {
         if(delegate.isInRegion(x, y, z)) {
             action.run();
-        } else if(warn.getAndSet(false)) {
+        } else {
+            logOutOfBounds(x, y, z);
+        }
+    }
+
+    private void logOutOfBounds(int x, int y, int z) {
+        if(warn.getAndSet(false)) {
             LOGGER.warn("Detected world access at coordinates out of bounds: ({}, {}, {}) accessed for region [{}, {}]", x, y, z,
                 delegate.getCenterChunkX(), delegate.getCenterChunkZ());
         } else {

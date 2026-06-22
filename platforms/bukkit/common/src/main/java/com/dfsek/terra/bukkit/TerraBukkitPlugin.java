@@ -43,6 +43,7 @@ import com.dfsek.terra.bukkit.listeners.CommonListener;
 import com.dfsek.terra.bukkit.util.PaperUtil;
 import com.dfsek.terra.bukkit.util.VersionUtil;
 import com.dfsek.terra.bukkit.world.BukkitAdapter;
+import com.dfsek.terra.bukkit.world.BukkitGenerationQueue;
 
 
 public class TerraBukkitPlugin extends JavaPlugin {
@@ -64,6 +65,7 @@ public class TerraBukkitPlugin extends JavaPlugin {
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
+        BukkitGenerationQueue.setPlugin(this);
 
         platform.getEventManager().callEvent(new PlatformInitializationEvent());
 

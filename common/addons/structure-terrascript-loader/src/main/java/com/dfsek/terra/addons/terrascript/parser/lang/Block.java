@@ -12,7 +12,7 @@ import java.util.List;
 import com.dfsek.terra.addons.terrascript.tokenizer.Position;
 
 
-public class Block implements Item<Block.ReturnInfo<?>> {
+public class Block implements Item<Block.ReturnInfo<?>>, Bounded {
     private final List<Item<?>> items;
     private final Position position;
 
@@ -35,6 +35,17 @@ public class Block implements Item<Block.ReturnInfo<?>> {
     @Override
     public Position getPosition() {
         return position;
+    }
+
+    @Override
+    public int getMaxHorizontalRadius() {
+        return items
+            .stream()
+            .filter(Bounded.class::isInstance)
+            .map(Bounded.class::cast)
+            .mapToInt(Bounded::getMaxHorizontalRadius)
+            .max()
+            .orElse(0);
     }
 
     public enum ReturnLevel {

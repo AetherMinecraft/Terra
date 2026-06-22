@@ -17,8 +17,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.dfsek.terra.addons.terrascript.parser.lang.ImplementationArguments;
+import com.dfsek.terra.addons.terrascript.parser.lang.Bounded;
 import com.dfsek.terra.addons.terrascript.parser.lang.Returnable;
 import com.dfsek.terra.addons.terrascript.parser.lang.Scope;
+import com.dfsek.terra.addons.terrascript.parser.lang.constants.ConstantExpression;
 import com.dfsek.terra.addons.terrascript.parser.lang.constants.StringConstant;
 import com.dfsek.terra.addons.terrascript.parser.lang.functions.Function;
 import com.dfsek.terra.addons.terrascript.script.TerraImplementationArguments;
@@ -27,7 +29,7 @@ import com.dfsek.terra.api.Platform;
 import com.dfsek.terra.api.block.state.BlockState;
 
 
-public class BlockFunction implements Function<Void> {
+public class BlockFunction implements Function<Void>, Bounded {
     private static final Logger logger = LoggerFactory.getLogger(BlockFunction.class);
     protected final Returnable<Number> x, y, z;
     protected final Returnable<String> blockData;
@@ -86,6 +88,18 @@ public class BlockFunction implements Function<Void> {
 
     protected BlockState getBlockState(ImplementationArguments arguments, Scope scope) {
         return data.computeIfAbsent(blockData.apply(arguments, scope), platform.getWorldHandle()::createBlockState);
+    }
+
+    @Override
+    public int getMaxHorizontalRadius() {
+        return Math.max(constantAbs(x), constantAbs(z));
+    }
+
+    private int constantAbs(Returnable<Number> value) {
+        if(value instanceof ConstantExpression<?> constant && constant.getConstant() instanceof Number number) {
+            return Math.abs(FloatingPointFunctions.round(number.doubleValue()));
+        }
+        return 0;
     }
 
 

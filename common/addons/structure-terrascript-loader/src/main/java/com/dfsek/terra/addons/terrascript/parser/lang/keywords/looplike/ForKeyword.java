@@ -8,6 +8,7 @@
 package com.dfsek.terra.addons.terrascript.parser.lang.keywords.looplike;
 
 import com.dfsek.terra.addons.terrascript.parser.lang.Block;
+import com.dfsek.terra.addons.terrascript.parser.lang.Bounded;
 import com.dfsek.terra.addons.terrascript.parser.lang.ImplementationArguments;
 import com.dfsek.terra.addons.terrascript.parser.lang.Item;
 import com.dfsek.terra.addons.terrascript.parser.lang.Keyword;
@@ -16,7 +17,7 @@ import com.dfsek.terra.addons.terrascript.parser.lang.Scope;
 import com.dfsek.terra.addons.terrascript.tokenizer.Position;
 
 
-public class ForKeyword implements Keyword<Block.ReturnInfo<?>> {
+public class ForKeyword implements Keyword<Block.ReturnInfo<?>>, Bounded {
     private final Block conditional;
     private final Item<?> initializer;
     private final Returnable<Boolean> statement;
@@ -51,5 +52,10 @@ public class ForKeyword implements Keyword<Block.ReturnInfo<?>> {
     @Override
     public ReturnType returnType() {
         return ReturnType.VOID;
+    }
+
+    @Override
+    public int getMaxHorizontalRadius() {
+        return conditional.getMaxHorizontalRadius();
     }
 }

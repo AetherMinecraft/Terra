@@ -51,6 +51,16 @@ public class ConfiguredFeature implements Feature {
     }
 
     @Override
+    public int getMaxHorizontalRadius() {
+        return structures
+            .getContents()
+            .stream()
+            .mapToInt(Structure::getMaxHorizontalRadius)
+            .max()
+            .orElse(0);
+    }
+
+    @Override
     public String getID() {
         return id;
     }

@@ -38,6 +38,7 @@ import com.dfsek.terra.api.config.ConfigPack;
 import com.dfsek.terra.bukkit.generator.BukkitChunkGeneratorWrapper;
 import com.dfsek.terra.bukkit.hooks.MultiverseGeneratorPluginHook;
 import com.dfsek.terra.bukkit.world.BukkitBiomeInfo;
+import com.dfsek.terra.bukkit.world.BukkitGenerationQueue;
 import com.dfsek.terra.bukkit.world.BukkitPlatformBiome;
 
 
@@ -122,6 +123,8 @@ public class CommonListener implements Listener {
 
     @EventHandler
     public void onChunkGenerate(ChunkLoadEvent event) {
+        BukkitGenerationQueue.scheduleFlushLoaded(event.getWorld());
+
         if(!event.isNewChunk()) {
             return;
         }
