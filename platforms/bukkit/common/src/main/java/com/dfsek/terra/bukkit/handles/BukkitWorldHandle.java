@@ -40,8 +40,9 @@ public class BukkitWorldHandle implements WorldHandle {
 
     @Override
     public synchronized @NotNull BlockState createBlockState(@NotNull String data) {
+        String blockData = BukkitUtils.stripTrailingNBT(data);
         org.bukkit.block.data.BlockData bukkitData = Bukkit.createBlockData(
-            data); // somehow bukkit managed to make this not thread safe! :)
+            blockData); // somehow bukkit managed to make this not thread safe! :)
         return BukkitBlockState.newInstance(bukkitData);
     }
 

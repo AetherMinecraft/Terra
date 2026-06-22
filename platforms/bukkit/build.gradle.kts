@@ -3,6 +3,11 @@ plugins {
     id("xyz.jpenilla.run-paper") version Versions.Bukkit.runPaper
 }
 
+java {
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
+}
+
 dependencies {
     // Required for :platforms:bukkit:runDevBundleServer task
     paperweight.paperDevBundle(Versions.Bukkit.paperDevBundle)
@@ -35,6 +40,10 @@ tasks {
             modrinth("viaversion", "5.5.0")
             modrinth("viabackwards", "5.5.0")
         }
+    }
+
+    withType<JavaCompile>().configureEach {
+        options.release.set(25)
     }
 }
 

@@ -1,0 +1,28 @@
+[
+  {
+    "name" : "com.dfsek.terra.cli.TerraCLI",
+    "allDeclaredConstructors" : true,
+    "allPublicConstructors" : true,
+    "allDeclaredMethods" : true,
+    "allPublicMethods" : true,
+    "fields" : [
+      { "name" : "maxHeight" },
+      { "name" : "minHeight" },
+      { "name" : "noSave" },
+      { "name" : "pack" },
+      { "name" : "seed" },
+      { "name" : "size" }
+    ]
+  },
+  {
+    "name" : "picocli.CommandLine$AutoHelpMixin",
+    "allDeclaredConstructors" : true,
+    "allPublicConstructors" : true,
+    "allDeclaredMethods" : true,
+    "allPublicMethods" : true,
+    "fields" : [
+      { "name" : "helpRequested" },
+      { "name" : "versionRequested" }
+    ]
+  }
+]

@@ -20,6 +20,7 @@ public class BukkitUtils {
     }
 
     public static EntityType getEntityType(String id) {
+        id = stripTrailingNBT(id);
         if(!id.startsWith("minecraft:")) throw new IllegalArgumentException("Invalid entity identifier " + id);
         String entityID = id.toUpperCase(Locale.ROOT).substring(10);
 
@@ -29,5 +30,14 @@ public class BukkitUtils {
                 "Invalid entity identifier " + id); // make sure this issue can't happen the other way around.
             default -> org.bukkit.entity.EntityType.valueOf(entityID);
         });
+    }
+
+    public static String stripTrailingNBT(String id) {
+        int nbtStart = id.indexOf('{');
+        if(nbtStart < 0) {
+            return id;
+        }
+        logger.debug("Ignoring trailing NBT in '{}'.", id);
+        return id.substring(0, nbtStart);
     }
 }

@@ -1,0 +1,41 @@
+{
+    "schemaVersion": 1,
+    "id": "terra",
+    "version": "@VERSION@",
+    "name": "Terra",
+    "description": "@DESCRIPTION@",
+    "authors": [
+        "dfsek",
+        "duplexsystem",
+        "Astrash",
+        "solonovamax",
+        "Sancires",
+        "Aureus",
+        "RogueShade",
+        "OakLoaf"
+    ],
+    "contact": {
+        "homepage": "@WIKI@",
+        "sources": "@SOURCE@",
+        "issues": "@ISSUES@"
+    },
+    "license": "@LICENSE@",
+    "icon": "assets/terra/icon.png",
+    "environment": "*",
+    "entrypoints": {
+        "main": [
+            "com.dfsek.terra.fabric.FabricEntryPoint"
+        ]
+    },
+    "mixins": [
+        "terra.fabric.mixins.json",
+        "terra.lifecycle.mixins.json",
+        "terra.common.mixins.json"
+    ],
+    "depends": {
+        "fabricloader": ">=0.16.10",
+        "java": ">=21",
+        "minecraft": "1.21.10",
+        "fabric": "*"
+    }
+}

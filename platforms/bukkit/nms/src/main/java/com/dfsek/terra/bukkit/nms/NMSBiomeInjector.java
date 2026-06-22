@@ -2,11 +2,16 @@ package com.dfsek.terra.bukkit.nms;
 
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.attribute.AmbientSounds;
+import net.minecraft.world.attribute.BackgroundMusic;
+import net.minecraft.world.attribute.EnvironmentAttributeMap;
+import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeGenerationSettings;
 import net.minecraft.world.level.biome.BiomeSpecialEffects;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
@@ -17,7 +22,7 @@ import com.dfsek.terra.bukkit.nms.config.VanillaBiomeProperties;
 
 public class NMSBiomeInjector {
 
-    public static <T> Optional<Holder<T>> getEntry(Registry<T> registry, ResourceLocation identifier) {
+    public static <T> Optional<Holder<T>> getEntry(Registry<T> registry, Identifier identifier) {
         return registry.getOptional(identifier)
             .flatMap(registry::getResourceKey)
             .flatMap(registry::get);
@@ -28,55 +33,72 @@ public class NMSBiomeInjector {
         Biome.BiomeBuilder builder = new Biome.BiomeBuilder();
 
         BiomeSpecialEffects.Builder effects = new BiomeSpecialEffects.Builder();
+        EnvironmentAttributeMap.Builder attributes = EnvironmentAttributeMap.builder().putAll(vanilla.getAttributes());
+        AmbientSounds ambientSounds = vanilla.getAttributes().applyModifier(EnvironmentAttributes.AMBIENT_SOUNDS, AmbientSounds.EMPTY);
 
-        effects.fogColor(Objects.requireNonNullElse(vanillaBiomeProperties.getFogColor(), vanilla.getFogColor()))
-            .waterColor(Objects.requireNonNullElse(vanillaBiomeProperties.getWaterColor(), vanilla.getWaterColor()))
-            .waterFogColor(Objects.requireNonNullElse(vanillaBiomeProperties.getWaterFogColor(), vanilla.getWaterFogColor()))
-            .skyColor(Objects.requireNonNullElse(vanillaBiomeProperties.getSkyColor(), vanilla.getSkyColor()))
+        effects.waterColor(Objects.requireNonNullElse(vanillaBiomeProperties.getWaterColor(), vanilla.getWaterColor()))
             .grassColorModifier(Objects.requireNonNullElse(vanillaBiomeProperties.getGrassColorModifier(),
-                vanilla.getSpecialEffects().getGrassColorModifier()))
-            .backgroundMusicVolume(Objects.requireNonNullElse(vanillaBiomeProperties.getMusicVolume(), vanilla.getBackgroundMusicVolume()));
+                vanilla.getSpecialEffects().grassColorModifier()));
+
+        if(vanillaBiomeProperties.getFogColor() != null) {
+            attributes.set(EnvironmentAttributes.FOG_COLOR, vanillaBiomeProperties.getFogColor());
+        }
+
+        if(vanillaBiomeProperties.getWaterFogColor() != null) {
+            attributes.set(EnvironmentAttributes.WATER_FOG_COLOR, vanillaBiomeProperties.getWaterFogColor());
+        }
+
+        if(vanillaBiomeProperties.getSkyColor() != null) {
+            attributes.set(EnvironmentAttributes.SKY_COLOR, vanillaBiomeProperties.getSkyColor());
+        }
+
+        if(vanillaBiomeProperties.getMusicVolume() != null) {
+            attributes.set(EnvironmentAttributes.MUSIC_VOLUME, vanillaBiomeProperties.getMusicVolume());
+        }
 
         if(vanillaBiomeProperties.getGrassColor() == null) {
-            vanilla.getSpecialEffects().getGrassColorOverride().ifPresent(effects::grassColorOverride);
+            vanilla.getSpecialEffects().grassColorOverride().ifPresent(effects::grassColorOverride);
         } else {
             effects.grassColorOverride(vanillaBiomeProperties.getGrassColor());
         }
 
         if(vanillaBiomeProperties.getFoliageColor() == null) {
-            vanilla.getSpecialEffects().getFoliageColorOverride().ifPresent(effects::foliageColorOverride);
+            vanilla.getSpecialEffects().foliageColorOverride().ifPresent(effects::foliageColorOverride);
         } else {
             effects.foliageColorOverride(vanillaBiomeProperties.getFoliageColor());
         }
 
-        if(vanillaBiomeProperties.getParticleConfig() == null) {
-            vanilla.getSpecialEffects().getAmbientParticleSettings().ifPresent(effects::ambientParticle);
+        if(vanillaBiomeProperties.getDryFoliageColor() == null) {
+            vanilla.getSpecialEffects().dryFoliageColorOverride().ifPresent(effects::dryFoliageColorOverride);
         } else {
-            effects.ambientParticle(vanillaBiomeProperties.getParticleConfig());
+            effects.dryFoliageColorOverride(vanillaBiomeProperties.getDryFoliageColor());
         }
 
-        if(vanillaBiomeProperties.getLoopSound() == null) {
-            vanilla.getSpecialEffects().getAmbientLoopSoundEvent().ifPresent(effects::ambientLoopSound);
-        } else {
-            RegistryFetcher.soundEventRegistry().get(vanillaBiomeProperties.getLoopSound().location()).ifPresent(effects::ambientLoopSound);
+        if(vanillaBiomeProperties.getParticleConfig() != null) {
+            attributes.set(EnvironmentAttributes.AMBIENT_PARTICLES, List.of(vanillaBiomeProperties.getParticleConfig()));
         }
 
-        if(vanillaBiomeProperties.getMoodSound() == null) {
-            vanilla.getSpecialEffects().getAmbientMoodSettings().ifPresent(effects::ambientMoodSound);
-        } else {
-            effects.ambientMoodSound(vanillaBiomeProperties.getMoodSound());
+        if(vanillaBiomeProperties.getLoopSound() != null) {
+            Optional<? extends Holder<net.minecraft.sounds.SoundEvent>> loop = RegistryFetcher.soundEventRegistry()
+                .get(vanillaBiomeProperties.getLoopSound().location());
+            ambientSounds = new AmbientSounds(loop.map(holder -> (Holder<net.minecraft.sounds.SoundEvent>) holder),
+                ambientSounds.mood(), ambientSounds.additions());
+            attributes.set(EnvironmentAttributes.AMBIENT_SOUNDS, ambientSounds);
         }
 
-        if(vanillaBiomeProperties.getAdditionsSound() == null) {
-            vanilla.getSpecialEffects().getAmbientAdditionsSettings().ifPresent(effects::ambientAdditionsSound);
-        } else {
-            effects.ambientAdditionsSound(vanillaBiomeProperties.getAdditionsSound());
+        if(vanillaBiomeProperties.getMoodSound() != null) {
+            ambientSounds = new AmbientSounds(ambientSounds.loop(), Optional.of(vanillaBiomeProperties.getMoodSound()),
+                ambientSounds.additions());
+            attributes.set(EnvironmentAttributes.AMBIENT_SOUNDS, ambientSounds);
         }
 
-        if(vanillaBiomeProperties.getMusic() == null) {
-            vanilla.getSpecialEffects().getBackgroundMusic().ifPresent(effects::backgroundMusic);
-        } else {
-            effects.backgroundMusic(vanillaBiomeProperties.getMusic());
+        if(vanillaBiomeProperties.getAdditionsSound() != null) {
+            ambientSounds = new AmbientSounds(ambientSounds.loop(), ambientSounds.mood(), List.of(vanillaBiomeProperties.getAdditionsSound()));
+            attributes.set(EnvironmentAttributes.AMBIENT_SOUNDS, ambientSounds);
+        }
+
+        if(vanillaBiomeProperties.getMusic() != null) {
+            attributes.set(EnvironmentAttributes.BACKGROUND_MUSIC, new BackgroundMusic(vanillaBiomeProperties.getMusic()));
         }
 
         builder.hasPrecipitation(Objects.requireNonNullElse(vanillaBiomeProperties.getPrecipitation(), vanilla.hasPrecipitation()));
@@ -91,6 +113,7 @@ public class NMSBiomeInjector {
         builder.mobSpawnSettings(Objects.requireNonNullElse(vanillaBiomeProperties.getSpawnSettings(), vanilla.getMobSettings()));
 
         return builder
+            .putAttributes(attributes)
             .specialEffects(effects.build())
             .generationSettings(new BiomeGenerationSettings.PlainBuilder().build())
             .build();
